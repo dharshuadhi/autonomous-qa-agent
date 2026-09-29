@@ -4,7 +4,10 @@ import com.dharshu.qaagent.core.SmartLocator;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.List;
 
 public class CartPage {
@@ -39,6 +42,10 @@ public class CartPage {
 
     public void startCheckout() {
         checkoutButton.find(driver).click();
+        // Wait for the checkout-info page to actually load before the next step
+        // tries to type into its fields -- fixes a click-then-type race condition.
+        new WebDriverWait(driver, Duration.ofSeconds(5))
+                .until(ExpectedConditions.urlContains("checkout-step-one"));
     }
 
     public List<WebElement> getLineItems() {

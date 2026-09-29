@@ -34,17 +34,17 @@ Ticket / Story --> Test Generation (LLM) --> Self-Healing Execution --> Tests pa
 | Test execution | Java 17, Selenium 4, Cucumber, JUnit 4 |
 | Build / CI | Maven, GitHub Actions |
 | Self-healing | Custom `SmartLocator` (primary locator + fallback chain) |
-| AI layer | Anthropic Claude API (test generation + root cause analysis) |
+| AI layer | LLM API (free tier available, no credit card) -- test generation + root cause analysis |
 | Bug filing | Azure DevOps REST API (Work Items) |
 | Reporting | Allure |
 
 ## Running it locally
 
 1. Install Java 17, Maven, and Google Chrome.
-2. Copy `.env.example` to `.env`, fill in your own `LLM_API_KEY` (from
-   [console.anthropic.com](https://console.anthropic.com)) and, if you want
-   bug filing to work, `ADO_ORG` / `ADO_PROJECT` / `ADO_PAT`. Then export
-   them: `export $(cat .env | xargs)` (Mac/Linux).
+2. Copy `.env.example` to `.env`, fill in your own `LLM_API_KEY` (see
+   `.env.example` for where to get one) and, if you want bug filing to work,
+   `ADO_ORG` / `ADO_PROJECT` / `ADO_PAT`.
+   Then export them: `export $(cat .env | xargs)` (Mac/Linux).
 3. Run the suite:
    ```
    mvn test

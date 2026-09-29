@@ -3,7 +3,13 @@ package com.dharshu.qaagent.steps;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.junit.Assert;
+import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.time.Duration;
 
 public class CartSteps {
 
@@ -33,10 +39,11 @@ public class CartSteps {
     @Then("the cart badge should not be visible")
     public void the_cart_badge_should_not_be_visible() {
         try {
-            ctx.inventoryPage.getCartBadgeCount();
-            Assert.fail("Expected the cart badge to be gone, but it was still visible.");
-        } catch (NoSuchElementException expected) {
-            // badge correctly absent
+            new WebDriverWait(ctx.driver, Duration.ofSeconds(4))
+                    .until(ExpectedConditions.invisibilityOfElementLocated(
+                            By.cssSelector(".shopping_cart_badge")));
+        } catch (TimeoutException e) {
+            Assert.fail("Expected the cart badge to disappear within 4 seconds, but it was still visible.");
         }
     }
 

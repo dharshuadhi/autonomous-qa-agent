@@ -10,9 +10,9 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Thin wrapper around the Anthropic Messages API. Reads the API key from the
- * LLM_API_KEY environment variable (set as a GitHub Actions secret in CI, or
- * exported locally) -- the key is never hardcoded or committed.
+ * Thin wrapper around an LLM API. Reads the API key from the LLM_API_KEY
+ * environment variable (set as a GitHub Actions secret in CI, or exported
+ * locally) -- the key is never hardcoded or committed.
  *
  * Reused by:
  *  - TestGenerator (Step 7: requirement text -> Gherkin scenarios)
@@ -20,8 +20,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class LlmClient {
 
-    private static final String API_URL = "https://api.anthropic.com/v1/messages";
-    private static final String MODEL = "claude-sonnet-4-5";
+    private static final String MODEL = "gemini-2.5-flash";
+    private static final String API_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent";
 
     private final OkHttpClient http;
     private final String apiKey;
@@ -44,26 +45,22 @@ public class LlmClient {
     }
 
     /**
-     * Sends a single user-turn prompt and returns the model's plain-text reply.
+     * Sends a single prompt and returns the model's plain-text reply.
      */
     public String complete(String prompt) {
         try {
             ObjectNode body = mapper.createObjectNode();
-            body.put("model", MODEL);
-            body.put("max_tokens", 1500);
-
-            ArrayNode messages = body.putArray("messages");
-            ObjectNode userMessage = messages.addObject();
-            userMessage.put("role", "user");
-            userMessage.put("content", prompt);
+            ArrayNode contents = body.putArray("contents");
+            ObjectNode content = contents.addObject();
+            ArrayNode parts = content.putArray("parts");
+            parts.addObject().put("text", prompt);
 
             RequestBody requestBody = RequestBody.create(
                     mapper.writeValueAsString(body), MediaType.parse("application/json"));
 
             Request request = new Request.Builder()
                     .url(API_URL)
-                    .header("x-api-key", apiKey)
-                    .header("anthropic-version", "2023-06-01")
+                    .header("x-goog-api-key", apiKey)
                     .header("content-type", "application/json")
                     .post(requestBody)
                     .build();
@@ -73,7 +70,9 @@ public class LlmClient {
                     throw new IOException("LLM API call failed: HTTP " + response.code());
                 }
                 JsonNode json = mapper.readTree(response.body().string());
-                return json.path("content").get(0).path("text").asText();
+                return json.path("candidates").get(0)
+                        .path("content").path("parts").get(0)
+                        .path("text").asText();
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to call the LLM API", e);
