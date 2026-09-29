@@ -1,0 +1,3 @@
+As a user I want to complete checkout with multiple items in my cart and see
+the correct order total, including cases where the cart is empty or where I
+try to check out without entering my postal code.
