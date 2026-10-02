@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  issues: write
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -35,30 +32,6 @@ jobs:
 
       - name: Run tests
         run: mvn -B test
-
-      # TEMPORARY diagnostic: CI logs aren't readable without sign-in,
-      # so on failure publish the surefire reports to a (public) issue.
-      - name: Publish failure diagnostics
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          {
-            echo "## Surefire reports for run ${{ github.run_id }}"
-            echo
-            for f in target/surefire-reports/*.txt; do
-              echo "### $f"
-              echo '```'
-              head -c 8000 "$f"
-              echo '```'
-            done
-            echo
-            echo "### target/checkout-debug.txt"
-            echo '```'
-            cat target/checkout-debug.txt 2>/dev/null || echo "(no checkout debug file)"
-            echo '```'
-          } > /tmp/diag.md
-          gh issue create --title "[CI DEBUG] diagnostics for run ${{ github.run_id }}" --body-file /tmp/diag.md
 
       - name: Generate Allure report
         if: always()

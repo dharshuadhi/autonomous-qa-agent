@@ -61,24 +61,8 @@ public class CheckoutPage {
         // The total label only exists on the overview page. Without this wait,
         // getDisplayedTotal() races the step-one -> step-two navigation and flakes
         // on slow runners when the overview page takes more than a few seconds.
-        try {
-            new WebDriverWait(driver, Duration.ofSeconds(15))
-                    .until(ExpectedConditions.urlContains("checkout-step-two"));
-        } catch (org.openqa.selenium.TimeoutException e) {
-            // TEMPORARY CI DEBUG: dump form state to diagnose the stuck navigation.
-            try {
-                String debug = "URL=" + driver.getCurrentUrl()
-                        + " | first-name='" + driver.findElement(By.id("first-name")).getAttribute("value") + "'"
-                        + " | last-name='" + driver.findElement(By.id("last-name")).getAttribute("value") + "'"
-                        + " | postal-code='" + driver.findElement(By.id("postal-code")).getAttribute("value") + "'"
-                        + " | react-first-name='" + ((JavascriptExecutor) driver).executeScript(
-                                "return document.querySelector(\"[data-test='firstName']\").value") + "'"
-                        + " | error-container=" + driver.findElements(By.cssSelector("[data-test='error']")).size();
-                java.nio.file.Files.writeString(java.nio.file.Path.of("target/checkout-debug.txt"), debug);
-            } catch (Exception ignored) {
-            }
-            throw e;
-        }
+        new WebDriverWait(driver, Duration.ofSeconds(15))
+                .until(ExpectedConditions.urlContains("checkout-step-two"));
     }
 
     /**
