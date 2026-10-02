@@ -103,8 +103,9 @@ requirements/                  Plain-English requirements fed to TestGenerator
 
 ## Results
 
-- [ ] Self-healed N of N intentionally broken locators
+- [x] Self-healed 1 of 1 intentionally broken locators (verified with real headless Chrome against live SauceDemo -- broken primary healed via fallback, `SelfHealingVerificationTest`)
+- [x] 13/13 unit tests pass (`HealingReportTest`, `SmartLocatorBuilderTest`, `RcaAnalyzerTest`)
 - [ ] AI-generated scenario caught a real edge case the hand-written suite missed
 - [ ] A real Azure DevOps work item was auto-created from a real failure
 
-*(Fill these in once you've run it — see the build guide's Step 11.)*
+*(The last two need `LLM_API_KEY` / `ADO_*` secrets -- they run in CI once those are configured.)*

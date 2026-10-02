@@ -19,6 +19,14 @@ public final class HealingReport {
     private HealingReport() {
     }
 
+    /** Resets all counters. Package-visible for unit tests. */
+    static void reset() {
+        primaryHits.set(0);
+        healedHits.set(0);
+        failures.set(0);
+        healEvents.clear();
+    }
+
     static void recordPrimary(String elementName) {
         primaryHits.incrementAndGet();
     }
