@@ -4,6 +4,7 @@ import com.dharshu.qaagent.core.SmartLocator;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -53,11 +54,9 @@ public class CheckoutPage {
     }
 
     public void fillInfo(String firstName, String lastName, String postalCode) {
-        // Wait for the checkout-info page to actually be present before typing --
-        // avoids a race where the click that got us here hasn't finished rendering yet.
-        firstNameField.find(driver).sendKeys(firstName);
-        lastNameField.find(driver).sendKeys(lastName);
-        postalCodeField.find(driver).sendKeys(postalCode);
+        typeReliably(firstNameField, firstName);
+        typeReliably(lastNameField, lastName);
+        typeReliably(postalCodeField, postalCode);
         continueButton.click(driver);
         // The total label only exists on the overview page. Without this wait,
         // getDisplayedTotal() races the step-one -> step-two navigation and flakes
@@ -80,6 +79,31 @@ public class CheckoutPage {
             }
             throw e;
         }
+    }
+
+    /**
+     * Types into a field and verifies the value stuck. Presence in the DOM is
+     * not enough: right after navigation the input can exist while React is
+     * still hydrating, and keys typed into that half-rendered input are wiped
+     * on re-render -- leaving the form empty and the Continue click blocked
+     * by validation. So we wait for true interactability first and re-type
+     * once if verification shows the value didn't stick.
+     */
+    private void typeReliably(SmartLocator field, String value) {
+        for (int attempt = 0; attempt < 3; attempt++) {
+            WebElement element = field.find(driver);
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(ExpectedConditions.visibilityOf(element));
+            element.clear();
+            element.sendKeys(value);
+            if (value.equals(element.getAttribute("value"))) {
+                return;
+            }
+            // Value didn't stick -- re-resolve (the element may have been
+            // re-rendered) and retry.
+        }
+        throw new IllegalStateException(
+                "Could not type value into field after 3 attempts (React hydration race).");
     }
 
     /** Clicks Continue with every field left blank, to trigger SauceDemo's validation error. */
