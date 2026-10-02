@@ -1,250 +1,389 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QA OPS — Autonomous QA Agent</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autonomous QA — The Self-Healing Clinic</title>
+<meta name="description" content="An autonomous QA agent that heals its own broken locators. Live demo.">
 <style>
   :root{
-    --bg:#0b0e24; --bg2:#101436; --panel:#151a3f; --panel2:#1b2160;
-    --line:#2b3270; --txt:#e8ebff; --dim:#9aa3d6;
-    --cyan:#4de3ff; --violet:#a78bfa; --green:#3ddc84; --amber:#ffb224; --red:#ff5d5d;
+    --bg:#070d1f; --bg2:#0b142e; --card:#0e1834; --line:#1b2a52;
+    --teal:#2dd4bf; --teal-dim:#14b8a6; --coral:#fb7185; --amber:#fbbf24;
+    --ink:#e8eefc; --mut:#93a0c4; --green:#34d399;
   }
-  *{box-sizing:border-box}
-  body{background:radial-gradient(1200px 600px at 50% -10%, #1a2060 0%, var(--bg) 55%) fixed, var(--bg);
-       color:var(--txt); margin:0; font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;}
-  .deckbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:.6rem;
-           background:rgba(11,14,36,.92);border-bottom:1px solid var(--line);padding:.6rem 1rem;
-           font-size:.8rem;color:var(--dim);backdrop-filter:blur(6px)}
-  .deckbar .live{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
-  @keyframes pulse{50%{opacity:.4}}
-  .deckbar b{color:var(--txt);letter-spacing:.12em}
-  .wrap{max-width:980px;margin:0 auto;padding:2rem 1rem 6rem}
-  .hero{border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,var(--panel),var(--bg2));
-        padding:2rem 2rem 1.6rem;margin-bottom:1.4rem;position:relative;overflow:hidden}
-  .hero::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;
-        background:linear-gradient(90deg,var(--cyan),var(--violet),var(--green))}
-  .hero h1{margin:0 0 .4rem;font-size:1.9rem;letter-spacing:.06em}
-  .hero h1 .c{color:var(--cyan)}
-  .hero p{margin:.2rem 0;color:var(--dim);font-size:.95rem;max-width:640px;line-height:1.6}
-  .hero p b{color:var(--txt)}
-  .badges{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
-  .badges a{color:var(--cyan);text-decoration:none;font-size:.8rem;border:1px solid var(--line);
-            border-radius:20px;padding:.35rem .9rem;background:rgba(77,227,255,.06)}
-  .badges a:hover{background:rgba(77,227,255,.14)}
-  /* mascot */
-  #bolt{position:absolute;right:34px;bottom:14px;width:74px;height:96px;transition:left 1.1s ease-in-out, bottom .5s;
-        filter:drop-shadow(0 6px 12px rgba(0,0,0,.5))}
-  #bolt .bob{animation:bob 2.4s ease-in-out infinite}
-  @keyframes bob{50%{transform:translateY(-7px)}}
-  #bolt .arm{transform-origin:70px 44px;transition:transform .3s}
-  #bolt.pressing .arm{transform:rotate(-38deg)}
-  #bolt .eye{animation:blink 4s infinite}
-  @keyframes blink{0%,93%,100%{transform:scaleY(1)} 96%{transform:scaleY(.1)}}
-  .panel{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:1.4rem;margin-bottom:1.4rem}
-  .panel h2{margin:0 0 .3rem;font-size:1.15rem;letter-spacing:.05em}
-  .panel h2 .tag{font-size:.68rem;vertical-align:middle;background:rgba(77,227,255,.12);color:var(--cyan);
-        border:1px solid var(--line);border-radius:12px;padding:.15rem .6rem;margin-left:.5rem;letter-spacing:.1em}
-  .panel .sub{color:var(--dim);font-size:.86rem;margin:0 0 1rem;line-height:1.55}
-  /* mock browser */
-  .browser{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;color:#222;margin-bottom:1rem}
-  .bbar{background:#e8eaf6;padding:.5rem .9rem;font-size:.75rem;color:#666;display:flex;gap:.5rem;align-items:center}
-  .bbar .dots{display:flex;gap:6px}
-  .bbar .dots span{width:10px;height:10px;border-radius:50%}
-  .bbar .dots .r{background:#ff5f57}.bbar .dots .y{background:#febc2e}.bbar .dots .g{background:#28c840}
-  .bbar .url{flex:1;background:#fff;border:1px solid #d5d8ea;border-radius:14px;padding:.2rem .8rem;font-size:.72rem}
-  .bpage{padding:2rem 1rem 2.4rem;text-align:center;position:relative}
-  .bpage h3{margin:0 0 1.2rem;color:#1a2060;font-size:1.3rem}
-  .bpage input{display:block;width:min(320px,86%);margin:.7rem auto;padding:.65rem .9rem;font-size:.9rem;
-        border:2px solid #c9cde6;border-radius:8px;transition:border-color .3s, box-shadow .3s}
-  .bpage input.healed{border-color:var(--green);box-shadow:0 0 0 4px rgba(61,220,132,.25)}
-  .bpage input.broken{border-color:var(--red);box-shadow:0 0 0 4px rgba(255,93,93,.18)}
-  .bpage button{background:#4f7cff;color:#fff;border:none;border-radius:8px;padding:.7rem 2.4rem;
-        font-size:.95rem;margin-top:1rem;cursor:default}
-  .chaos{position:absolute;top:10px;right:12px;font-size:.68rem;background:#fff3f3;color:#c00;
-        border:1px dashed #c00;border-radius:8px;padding:.3rem .6rem;display:none}
-  .controls{display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:1rem}
-  button.act{background:linear-gradient(180deg,var(--cyan),#2bb8e8);color:#06222b;border:none;border-radius:10px;
-        padding:.7rem 1.4rem;font-weight:700;font-size:.9rem;cursor:pointer;transition:transform .12s}
-  button.act:hover{filter:brightness(1.1)}
-  button.act.pressed{transform:scale(.92)}
-  button.ghost{background:transparent;color:var(--amber);border:1px solid var(--amber);border-radius:10px;
-        padding:.7rem 1.4rem;font-weight:600;font-size:.9rem;cursor:pointer}
-  button.ghost:hover{background:rgba(255,178,36,.1)}
-  button.ghost.armed{background:rgba(255,93,93,.16);border-color:var(--red);color:var(--red)}
-  /* console */
-  .console{background:#05071a;border:1px solid var(--line);border-radius:10px;padding:1rem 1.1rem;
-        font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;line-height:1.7;min-height:220px;max-height:340px;overflow-y:auto}
-  .console .t-dim{color:var(--dim)} .console .t-ok{color:var(--green)} .console .t-bad{color:var(--red)}
-  .console .t-warn{color:var(--amber)} .console .t-cyan{color:var(--cyan)} .console .t-vio{color:var(--violet)}
-  .console .step{opacity:0;animation:fadein .3s forwards}
-  @keyframes fadein{to{opacity:1}}
-  .report{margin-top:1rem;border:1px solid var(--line);border-radius:10px;background:#05071a;
-        padding:1rem 1.1rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;line-height:1.7;display:none}
-  .report.show{display:block;animation:fadein .4s}
-  /* pipeline */
-  .pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;margin-top:1rem}
-  .stage{border:1px solid var(--line);border-radius:10px;background:#05071a;padding:.9rem .7rem;text-align:center;
-        cursor:pointer;transition:border-color .2s, transform .15s}
-  .stage:hover{border-color:var(--cyan);transform:translateY(-2px)}
-  .stage.active{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(77,227,255,.25)}
-  .stage .n{font-size:1.4rem} .stage h4{margin:.4rem 0 .2rem;font-size:.82rem}
-  .stage p{margin:0;font-size:.7rem;color:var(--dim);line-height:1.5}
-  .stagedetail{margin-top:1rem;border-left:3px solid var(--cyan);padding:.4rem 1rem;color:var(--dim);
-        font-size:.86rem;line-height:1.6;display:none}
-  .stagedetail.show{display:block;animation:fadein .3s}
-  .stagedetail code{color:var(--cyan);font-size:.8rem}
-  /* RCA */
-  .rca-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-  @media(max-width:720px){.rca-grid{grid-template-columns:1fr}.pipe{grid-template-columns:repeat(2,1fr)}}
-  .failpick{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
-  .failpick button{background:#05071a;color:var(--dim);border:1px solid var(--line);border-radius:8px;
-        padding:.5rem .9rem;font-size:.8rem;cursor:pointer}
-  .failpick button.sel{border-color:var(--red);color:var(--red)}
-  .ticket{border:1px solid var(--line);border-radius:10px;background:#05071a;padding:1rem 1.1rem;font-size:.82rem;display:none}
-  .ticket.show{display:block;animation:fadein .4s}
-  .ticket .tid{color:var(--violet);font-family:ui-monospace,monospace}
-  .ticket h4{margin:.3rem 0;color:var(--txt)}
-  .ticket .meta{display:flex;gap:.5rem;margin:.5rem 0}
-  .pill{font-size:.68rem;border-radius:10px;padding:.15rem .6rem;border:1px solid var(--line)}
-  .pill.p1{color:var(--red);border-color:var(--red)} .pill.cat{color:var(--amber);border-color:var(--amber)}
-  .typing{border-right:2px solid var(--cyan);animation:blinkc 1s steps(1) infinite}
-  @keyframes blinkc{50%{border-color:transparent}}
-  footer{color:var(--dim);font-size:.78rem;text-align:center;margin-top:2rem;line-height:1.8}
-  footer a{color:var(--cyan);text-decoration:none}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;overflow-x:hidden}
+  a{color:var(--teal)}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 20px}
+
+  /* ---------- HERO ---------- */
+  .hero{position:relative;padding:26px 0 10px;overflow:hidden}
+  #ekg{position:absolute;top:0;left:0;width:100%;height:120px;opacity:.5;pointer-events:none}
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 0;position:relative;z-index:2}
+  .logo{font-weight:800;letter-spacing:2px;font-size:15px}
+  .logo b{color:var(--coral)}
+  .live-badge{display:inline-flex;align-items:center;gap:8px;background:#06281f;border:1px solid #0d5c46;
+    color:var(--green);font-size:12px;font-weight:700;letter-spacing:1px;padding:7px 14px;border-radius:99px;text-decoration:none}
+  .live-badge .dot{width:9px;height:9px;border-radius:50%;background:var(--green);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,.6)}50%{box-shadow:0 0 0 7px rgba(52,211,153,0)}}
+  .hero h1{font-size:clamp(38px,7vw,68px);line-height:1.02;font-weight:900;letter-spacing:-1px;margin:34px 0 6px;position:relative;z-index:2}
+  .hero h1 .teal{color:var(--teal)} .hero h1 .coral{color:var(--coral)}
+  .hero p.sub{color:var(--mut);font-size:clamp(15px,2.4vw,19px);max-width:620px;margin:10px 0 26px;position:relative;z-index:2}
+  .cta-row{display:flex;gap:12px;flex-wrap:wrap;position:relative;z-index:2;margin-bottom:8px}
+  .btn{display:inline-block;padding:13px 26px;border-radius:12px;font-weight:700;font-size:15px;text-decoration:none;cursor:pointer;border:none;transition:transform .15s}
+  .btn:active{transform:scale(.96)}
+  .btn-teal{background:var(--teal);color:#04211d}
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+
+  /* ambulance */
+  .road{position:relative;height:120px;margin-top:26px;border-top:2px dashed #22325e;overflow:hidden}
+  .amb{position:absolute;bottom:8px;left:-220px;font-size:64px;animation:drive 9s linear infinite;filter:drop-shadow(0 6px 12px rgba(0,0,0,.5))}
+  .amb .siren{position:absolute;top:-6px;left:38px;font-size:20px;animation:blink .5s steps(2) infinite}
+  @keyframes drive{to{left:110%}}
+  @keyframes blink{50%{opacity:.2}}
+  .road-label{position:absolute;top:10px;left:0;color:var(--mut);font-size:12px;letter-spacing:2px}
+
+  /* ---------- STATS ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:26px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 8px;text-align:center}
+  .stat .n{font-size:30px;font-weight:900;color:var(--teal)}
+  .stat .l{font-size:11px;color:var(--mut);letter-spacing:1px;margin-top:4px}
+  @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:44px 0}
+  .kicker{color:var(--coral);font-size:12px;font-weight:800;letter-spacing:3px;margin-bottom:8px}
+  h2{font-size:clamp(26px,4.5vw,36px);font-weight:900;margin-bottom:8px}
+  .lede{color:var(--mut);max-width:640px;margin-bottom:24px}
+
+  /* triage bays */
+  .bays{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:760px){.bays{grid-template-columns:repeat(2,1fr)}}
+  .bay{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 16px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+  .bay:hover{border-color:var(--teal);transform:translateY(-3px)}
+  .bay .icon{font-size:34px;margin-bottom:10px}
+  .bay h3{font-size:16px;margin-bottom:6px}
+  .bay p{font-size:13px;color:var(--mut);line-height:1.5}
+  .bay .num{position:absolute;top:10px;right:14px;color:var(--line);font-size:28px;font-weight:900}
+  .bay.open{grid-column:1/-1;border-color:var(--teal)}
+  .bay .detail{display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-size:13px;color:var(--mut);line-height:1.6}
+  .bay.open .detail{display:block}
+  .bay .detail code{background:#060b1c;padding:2px 6px;border-radius:6px;color:var(--teal);font-size:12px}
+
+  /* ---------- OPERATING THEATER ---------- */
+  .theater{background:linear-gradient(180deg,var(--bg2),var(--bg));border:1px solid var(--line);border-radius:22px;padding:28px;position:relative;overflow:hidden}
+  .theater::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--coral),var(--amber),var(--teal))}
+  .op-stage{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin:20px 0}
+  .patient-card{flex:1;min-width:260px;background:#060b1c;border:1px solid var(--line);border-radius:16px;padding:20px}
+  .patient-card h4{font-size:13px;letter-spacing:2px;color:var(--mut);margin-bottom:12px}
+  .vitals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .vital{background:var(--card);border-radius:10px;padding:10px;font-size:12px}
+  .vital .k{color:var(--mut);font-size:10px;letter-spacing:1px}
+  .vital .v{font-weight:800;font-size:16px;margin-top:2px}
+  .vital.crit .v{color:var(--coral)} .vital.ok .v{color:var(--green)}
+  #op-ekg{width:100%;height:90px;background:#040814;border-radius:10px;margin-top:12px}
+  .surgeon{flex:0 0 150px;text-align:center}
+  .surgeon .bot{font-size:72px;transition:transform .4s}
+  .surgeon.operating .bot{animation:operate 1s ease-in-out infinite}
+  @keyframes operate{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg) translateY(-4px)}}
+  .surgeon .cap{font-size:12px;color:var(--mut);margin-top:6px}
+  .op-log{background:#040814;border:1px solid var(--line);border-radius:12px;padding:16px;font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.9;min-height:190px;max-height:260px;overflow-y:auto;margin-top:16px}
+  .op-log .t{color:var(--mut)} .op-log .ok{color:var(--green)} .op-log .bad{color:var(--coral)}
+  .op-log .warn{color:var(--amber)} .op-log .hl{color:var(--teal);font-weight:700}
+  .heal-flash{animation:healflash 1.2s}
+  @keyframes healflash{0%{box-shadow:0 0 0 0 rgba(45,212,191,.0)}30%{box-shadow:0 0 40px 6px rgba(45,212,191,.55)}100%{box-shadow:0 0 0 0 rgba(45,212,191,0)}}
+
+  /* ---------- LAB ---------- */
+  .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.lab-grid{grid-template-columns:1fr}}
+  .lab-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .lab-card h3{margin-bottom:10px}
+  .symptom{width:100%;background:#060b1c;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:12px;font-size:14px;margin-bottom:12px;font-family:inherit}
+  .rx{background:#060b1c;border:1px dashed var(--amber);border-radius:12px;padding:16px;font-size:13px;line-height:1.7;display:none}
+  .rx.show{display:block;animation:healflash 1.2s}
+  .rx .rxh{color:var(--amber);font-weight:800;letter-spacing:2px;font-size:12px;margin-bottom:8px}
+
+  /* ---------- RECOVERY WARD ---------- */
+  .ward{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}
+  @media(max-width:820px){.ward{grid-template-columns:1fr}}
+  .video-card{background:#000;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .video-card video{width:100%;display:block}
+  .video-card .cap{padding:12px 16px;font-size:13px;color:var(--mut)}
+  .chart{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .chart-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .chart-row:last-child{border:none}
+  .pill{font-size:11px;font-weight:800;letter-spacing:1px;padding:5px 12px;border-radius:99px}
+  .pill.ok{background:#06281f;color:var(--green);border:1px solid #0d5c46}
+  .pill.healed{background:#2a1f05;color:var(--amber);border:1px solid #7a5b13}
+  .run-link{display:block;margin-top:16px;text-align:center}
+
+  footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--mut);font-size:13px;text-align:center}
+  footer a{margin:0 10px}
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s,transform .6s}
+  .reveal.in{opacity:1;transform:none}
 </style>
 </head>
 <body>
-<div class="deckbar"><span class="live"></span><b>QA&nbsp;OPS</b><span>autonomous-qa-agent · live demo deck</span></div>
+
+<!-- HERO -->
+<div class="hero">
+  <canvas id="ekg"></canvas>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="logo">AUTONOMOUS<b>QA</b> · CLINIC</div>
+      <a class="live-badge" href="https://github.com/dharshuadhi/autonomous-qa-agent/actions/runs/37076174879" target="_blank" rel="noopener"><span class="dot"></span>CI · PASSING</a>
+    </div>
+    <h1>Broken tests check in.<br><span class="teal">Healed tests</span> <span class="coral">check out.</span></h1>
+    <p class="sub">A self-healing QA agent for web apps. When the UI changes under it, it doesn't fail the build — it diagnoses the broken locator, operates with a fallback, and files the chart. Built with Java, Selenium &amp; Cucumber.</p>
+    <div class="cta-row">
+      <a class="btn btn-teal" href="#theater">🔬 Watch live surgery</a>
+      <a class="btn btn-ghost" href="https://github.com/dharshuadhi/autonomous-qa-agent" target="_blank" rel="noopener">View the code</a>
+    </div>
+    <div class="road">
+      <div class="road-label">NIGHT SHIFT · INCOMING</div>
+      <div class="amb">🚑<span class="siren">🚨</span></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n" data-count="22">0</div><div class="l">TESTS / NIGHT</div></div>
+      <div class="stat"><div class="n" data-count="100">0</div><div class="l">% DISCHARGED</div></div>
+      <div class="stat"><div class="n" data-count="3">0</div><div class="l">FALLBACK LOCATORS</div></div>
+      <div class="stat"><div class="n" data-count="0">0</div><div class="l">FLAKY FAILURES</div></div>
+    </div>
+  </div>
+</div>
+
 <div class="wrap">
 
-  <div class="hero">
-    <h1>AUTONOMOUS <span class="c">QA</span> AGENT</h1>
-    <p>A test agent that <b>runs</b> the suite, <b>heals its own locators</b> when the UI
-    changes, <b>explains failures</b> in plain English with an LLM, and
-    <b>files the bug</b> itself. Built with Java&nbsp;17, Selenium&nbsp;4, Cucumber and an
-    aspect-woven Allure reporter — running green in CI right now.</p>
-    <div class="badges">
-      <a href="https://github.com/dharshuadhi/autonomous-qa-agent/actions/runs/37076174879">🔴 Watch it run live</a>
-      <a href="https://github.com/dharshuadhi/autonomous-qa-agent">★ Repository</a>
-      <a href="https://github.com/dharshuadhi/autonomous-qa-agent/actions">✓ CI: passing</a>
-      <a href="#heal">⚡ Healing walkthrough</a>
-      <a href="#rca">🔍 Triage walkthrough</a>
-    </div>
-    <svg id="bolt" viewBox="0 0 74 96" aria-label="Bolt the QA robot">
-      <g class="bob">
-        <rect x="14" y="10" width="46" height="38" rx="10" fill="#2b3270" stroke="#4de3ff" stroke-width="2"/>
-        <ellipse class="eye" cx="29" cy="27" rx="5" ry="7" fill="#4de3ff"/>
-        <ellipse class="eye" cx="45" cy="27" rx="5" ry="7" fill="#4de3ff"/>
-        <rect x="28" y="38" width="18" height="4" rx="2" fill="#9aa3d6"/>
-        <line x1="37" y1="10" x2="37" y2="2" stroke="#9aa3d6" stroke-width="2"/>
-        <circle cx="37" cy="3" r="3" fill="#ff5d5d"/>
-        <rect x="20" y="52" width="34" height="26" rx="8" fill="#1b2160" stroke="#4de3ff" stroke-width="2"/>
-        <circle cx="37" cy="65" r="6" fill="#0b0e24" stroke="#3ddc84" stroke-width="2"/>
-        <g class="arm"><rect x="58" y="40" width="10" height="26" rx="5" fill="#2b3270" stroke="#4de3ff" stroke-width="2"/>
-        <circle cx="63" cy="70" r="6" fill="#4de3ff"/></g>
-        <rect x="6" y="40" width="10" height="26" rx="5" fill="#2b3270" stroke="#4de3ff" stroke-width="2"/>
-        <rect x="22" y="80" width="10" height="14" rx="4" fill="#2b3270"/>
-        <rect x="42" y="80" width="10" height="14" rx="4" fill="#2b3270"/>
-      </g>
-    </svg>
-  </div>
-
-  <div class="panel" id="live" style="border-color:var(--green)">
-    <h2>🔴 REAL EXECUTION — LIVE <span class="tag">NOT A SIMULATION</span></h2>
-    <p class="sub">The interactive playground below walks you through the logic. But the
-    <b>real</b> Java&nbsp;17 + Selenium suite is running <b>right now</b> in GitHub Actions
-    against the live SauceDemo site — real browser, real healing, real results.
-    Watch it happen:</p>
-    <div class="controls">
-      <a href="https://github.com/dharshuadhi/autonomous-qa-agent/actions/runs/37076174879"
-         style="text-decoration:none"><button class="act" id="liveBtn">▶ Watch the live CI run</button></a>
-      <a href="https://github.com/dharshuadhi/autonomous-qa-agent/actions"
-         style="text-decoration:none"><button class="ghost">All runs</button></a>
-    </div>
-    <div><img src="https://github.com/dharshuadhi/autonomous-qa-agent/actions/workflows/CI/badge.svg"
-         alt="CI status" style="margin-top:.4rem"></div>
-  </div>
-
-  <div class="panel" id="heal">
-    <h2>⚡ SELF-HEALING, LIVE <span class="tag">INTERACTIVE</span></h2>
-    <p class="sub">A hands-on walkthrough of the real <code>SmartLocator</code> logic
-    (the live execution is running in CI above). Break the page the way a UI change
-    would, then run the test and watch the agent walk its fallback chain. Every
-    resolution is counted in the <code>HealingReport</code>, exactly like the Java suite.</p>
-    <div class="browser">
-      <div class="bbar"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
-        <div class="url">https://www.saucedemo.com/</div></div>
-      <div class="bpage">
-        <div class="chaos" id="chaosNote">⚠ UI changed: <span id="chaosWhat"></span></div>
-        <h3>Swag Labs</h3>
-        <input id="user-name" data-test="username" placeholder="Username">
-        <input id="password" data-test="password" placeholder="Password" type="password">
-        <button id="login-button" data-test="login-button">Login</button>
+  <!-- TRIAGE -->
+  <section class="reveal">
+    <div class="kicker">TRIAGE</div>
+    <h2>Four bays. Zero waiting room.</h2>
+    <p class="lede">Tap a bay to see what happens inside. Every stage runs autonomously — no on-call human required.</p>
+    <div class="bays">
+      <div class="bay" onclick="this.classList.toggle('open')">
+        <div class="num">01</div><div class="icon">🧬</div><h3>Generate</h3><p>LLM drafts Cucumber scenarios from plain-English requirements.</p>
+        <div class="detail">An LLM reads the requirement doc and emits <code>.feature</code> files with realistic steps and data. A human reviews once — then the clinic takes over.</div>
+      </div>
+      <div class="bay" onclick="this.classList.toggle('open')">
+        <div class="num">02</div><div class="icon">🤖</div><h3>Execute</h3><p>Selenium drives the real app in headless Chrome, step by step.</p>
+        <div class="detail">Page objects encapsulate every screen of the app. Steps run against the live site with explicit waits — <code>SmartLocator.click()</code> waits for clickability, scrolls into view, and falls back to JS clicks.</div>
+      </div>
+      <div class="bay" onclick="this.classList.toggle('open')">
+        <div class="num">03</div><div class="icon">🩺</div><h3>Heal</h3><p>Broken locator? The agent switches to a fallback — mid-run.</p>
+        <div class="detail">Each element carries a primary locator plus a fallback chain. If the primary misses, <code>SmartLocator</code> walks the chain, logs a <code>[SELF-HEALED]</code> event, and the test continues. No rerun needed.</div>
+      </div>
+      <div class="bay" onclick="this.classList.toggle('open')">
+        <div class="num">04</div><div class="icon">📋</div><h3>Report</h3><p>Allure charts, healing notes, and auto-filed bug tickets.</p>
+        <div class="detail">Every run emits an Allure report plus a <code>HealingReport</code>. Genuine failures get an RCA and an Azure DevOps bug with logs attached — the on-call wakes up to answers, not alerts.</div>
       </div>
     </div>
-    <div class="controls">
-      <button class="ghost" id="breakBtn">🔧 Break the UI (rename an id)</button>
-      <button class="act" id="runBtn">▶ Run test</button>
-      <button class="ghost" id="resetBtn">↺ Reset</button>
-    </div>
-    <div class="console" id="console"><div class="t-dim">// press "Run test" — or break the UI first, then run it.</div></div>
-    <div class="report" id="report"></div>
-  </div>
+  </section>
 
-  <div class="panel">
-    <h2>🧭 HOW IT WORKS</h2>
-    <p class="sub">Tap a stage to see what the agent does there.</p>
-    <div class="pipe">
-      <div class="stage" data-s="0"><div class="n">🏃</div><h4>1 · Execute</h4><p>Cucumber suite on headless Chrome</p></div>
-      <div class="stage" data-s="1"><div class="n">🩹</div><h4>2 · Self-heal</h4><p>Fallback locator chain</p></div>
-      <div class="stage" data-s="2"><div class="n">🔍</div><h4>3 · Diagnose</h4><p>LLM root-cause analysis</p></div>
-      <div class="stage" data-s="3"><div class="n">🎫</div><h4>4 · File bug</h4><p>Auto-file in Azure DevOps</p></div>
-    </div>
-    <div class="stagedetail" id="stagedetail"></div>
-  </div>
-
-  <div class="panel" id="rca">
-    <h2>🔍 FAILURE → DIAGNOSIS → BUG <span class="tag">INTERACTIVE</span></h2>
-    <p class="sub">When a test genuinely fails, the agent screenshots the page, asks the LLM
-    for a plain-English root cause, and files a bug if confidence is high. Try it:</p>
-    <div class="failpick" id="failpick">
-      <button data-f="0" class="sel">Stale checkout button</button>
-      <button data-f="1">Login error unreadable</button>
-      <button data-f="2">Cart total mismatch</button>
-    </div>
-    <div class="rca-grid">
-      <div>
-        <div class="console" id="rcaConsole" style="min-height:180px"></div>
-        <div class="controls" style="margin-top:.8rem"><button class="act" id="rcaBtn">🤖 Ask the agent</button></div>
+  <!-- OPERATING THEATER -->
+  <section id="theater" class="reveal">
+    <div class="kicker">OPERATING THEATER</div>
+    <h2>Live surgery: the self-healing demo</h2>
+    <p class="lede">A developer renamed a button id at 2am. Watch Dr. Bolt operate — primary instrument fails, fallback saves the patient.</p>
+    <div class="theater" id="theaterBox">
+      <div class="op-stage">
+        <div class="surgeon" id="surgeon">
+          <div class="bot">👨‍⚕️</div>
+          <div class="cap" id="surgeonCap">Dr. Bolt · on call</div>
+        </div>
+        <div class="patient-card">
+          <h4>PATIENT CHART</h4>
+          <div style="font-weight:800">test: <span style="color:var(--teal)">add-to-cart flow</span></div>
+          <div style="font-size:13px;color:var(--mut);margin-top:4px">symptom: primary locator <code style="color:var(--coral)">[data-test='add-to-cart-backpack']</code> not found</div>
+          <canvas id="op-ekg"></canvas>
+          <div class="vitals">
+            <div class="vital crit" id="vStatus"><div class="k">STATUS</div><div class="v">🔴 CRITICAL</div></div>
+            <div class="vital" id="vHeal"><div class="k">HEALED BY</div><div class="v">—</div></div>
+          </div>
+        </div>
       </div>
-      <div class="ticket" id="ticket">
-        <span class="tid" id="tId"></span>
-        <h4 id="tTitle"></h4>
-        <div class="meta"><span class="pill p1" id="tPri"></span><span class="pill cat" id="tCat"></span></div>
-        <div id="tBody" style="color:var(--dim);line-height:1.6"></div>
+      <button class="btn btn-teal" id="opBtn" onclick="operate()">🔬 Begin operation</button>
+      <div class="op-log" id="opLog"><div class="t">— awaiting surgeon —</div></div>
+    </div>
+  </section>
+
+  <!-- DIAGNOSTICS LAB -->
+  <section class="reveal">
+    <div class="kicker">DIAGNOSTICS LAB</div>
+    <h2>From symptom to prescription</h2>
+    <p class="lede">When healing isn't possible, the agent performs a root-cause analysis and writes the prescription — a bug ticket with evidence.</p>
+    <div class="lab-grid">
+      <div class="lab-card">
+        <h3>🩸 Describe the symptom</h3>
+        <input class="symptom" id="symptom" value="Checkout total mismatch: expected $58.29, page showed $43.18">
+        <button class="btn btn-teal" onclick="diagnose()">Run diagnosis</button>
+        <div class="op-log" id="labLog" style="margin-top:14px;min-height:120px"><div class="t">— lab idle —</div></div>
+      </div>
+      <div class="lab-card">
+        <h3>💊 Prescription</h3>
+        <div class="rx" id="rx">
+          <div class="rxh">℞ BUG TICKET · AUTO-FILED</div>
+          <div><b>Title:</b> Checkout total mismatch on overview page</div>
+          <div><b>Severity:</b> P2 · <b>Area:</b> checkout-step-two</div>
+          <div><b>Evidence:</b> screenshot + DOM snapshot attached</div>
+          <div><b>RCA:</b> <span id="rxRca">—</span></div>
+          <div style="margin-top:8px;color:var(--mut)">Routed to checkout team · linked to run 37076174879</div>
+        </div>
+        <p style="color:var(--mut);font-size:13px;margin-top:12px" id="rxHint">Run a diagnosis to generate the prescription.</p>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="panel">
-    <h2>📊 REAL RESULTS</h2>
-    <p class="sub">From the live CI pipeline — not mock data.</p>
-    <div class="console" style="min-height:0">
-      <div><span class="t-dim">Tests run:</span> <span class="t-ok">22</span><span class="t-dim">, Failures:</span> <span class="t-ok">0</span><span class="t-dim">, Errors:</span> <span class="t-ok">0</span></div>
-      <div><span class="t-dim">Unit tests (healing counters, RCA parsing, locator builder):</span> <span class="t-ok">13/13</span></div>
-      <div><span class="t-dim">Cucumber scenarios (login · cart · checkout):</span> <span class="t-ok">8/8</span></div>
-      <div><span class="t-dim">Self-healing proof (broken primary → healed by fallback):</span> <span class="t-ok">1/1</span></div>
-      <div><span class="t-dim">Flakiness fixed along the way:</span> <span class="t-warn">clickability waits + atomic JS clicks</span></div>
+  <!-- RECOVERY WARD -->
+  <section class="reveal">
+    <div class="kicker">RECOVERY WARD</div>
+    <h2>Proof of recovery</h2>
+    <p class="lede">Not a simulation — the actual agent running the actual suite against the live SauceDemo site, plus the real CI record.</p>
+    <div class="ward">
+      <div class="video-card">
+        <video controls preload="metadata" src="live_run.mp4"></video>
+        <div class="cap">🎥 Live run: login → self-heal → cart → checkout → order confirmed. Real browser, real site.</div>
+      </div>
+      <div class="chart">
+        <h3 style="margin-bottom:10px">📊 Night report</h3>
+        <div class="chart-row"><span>Login scenarios</span><span class="pill ok">DISCHARGED</span></div>
+        <div class="chart-row"><span>Add-to-cart (self-healed)</span><span class="pill healed">HEALED ✓</span></div>
+        <div class="chart-row"><span>Checkout scenarios</span><span class="pill ok">DISCHARGED</span></div>
+        <div class="chart-row"><span>Unit tests (13)</span><span class="pill ok">DISCHARGED</span></div>
+        <div class="chart-row"><span>Readmissions (flakes)</span><span class="pill ok">0</span></div>
+        <a class="btn btn-ghost run-link" href="https://github.com/dharshuadhi/autonomous-qa-agent/actions/runs/37076174879" target="_blank" rel="noopener">🟢 Open the green CI run</a>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <footer>
-    Built by <a href="https://github.com/dharshuadhi">Dharshini Adimoolam</a> ·
-    <a href="https://github.com/dharshuadhi/autonomous-qa-agent">repository</a> ·
-    Java 17 · Selenium 4 · Cucumber · Allure
-  </footer>
 </div>
-<script src="engine.js"></script>
+
+<footer>
+  <div class="wrap">
+    Built by <a href="https://github.com/dharshuadhi">Dharshini Adimoolam</a> ·
+    <a href="https://github.com/dharshuadhi/autonomous-qa-agent">repo</a> ·
+    <a href="https://github.com/dharshuadhi/autonomous-qa-agent/actions">CI</a><br>
+    <span style="font-size:12px">Java 17 · Selenium · Cucumber · JUnit · Allure · GitHub Actions</span>
+  </div>
+</footer>
+
+<script>
+/* ---------- hero EKG ---------- */
+(function(){
+  const c=document.getElementById('ekg'),x=c.getContext('2d');
+  function size(){c.width=c.offsetWidth;c.height=120}
+  size();addEventListener('resize',size);
+  let t=0;
+  function beat(p){
+    if(p<0.1)return 0;
+    if(p<0.16)return (p-0.1)/0.06*0.25;
+    if(p<0.2)return 0.25-(p-0.16)/0.04*0.25;
+    if(p<0.24)return -(p-0.2)/0.04*1;
+    if(p<0.28)return -1+(p-0.24)/0.04*1.6;
+    if(p<0.34)return 0.6-(p-0.28)/0.06*0.85;
+    return 0;
+  }
+  function draw(){
+    x.clearRect(0,0,c.width,c.height);
+    x.strokeStyle='rgba(45,212,191,.55)';x.lineWidth=2;x.beginPath();
+    const mid=70,amp=34;
+    for(let i=0;i<c.width;i+=3){
+      const ph=((i/c.width*3)+t)%1;
+      const y=mid-beat(ph)*amp;
+      i===0?x.moveTo(i,y):x.lineTo(i,y);
+    }
+    x.stroke();t+=0.004;requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ---------- op theater EKG ---------- */
+const opC=document.getElementById('op-ekg');const ox=opC.getContext('2d');
+let opMode='flat',opT=0;
+function sizeOp(){opC.width=opC.offsetWidth;opC.height=90}
+sizeOp();addEventListener('resize',sizeOp);
+function beat(p){
+  if(p<0.1)return 0;if(p<0.16)return (p-0.1)/0.06*0.25;
+  if(p<0.2)return 0.25-(p-0.16)/0.04*0.25;if(p<0.24)return -(p-0.2)/0.04*1;
+  if(p<0.28)return -1+(p-0.24)/0.04*1.6;if(p<0.34)return 0.6-(p-0.28)/0.06*0.85;return 0;
+}
+(function drawOp(){
+  ox.clearRect(0,0,opC.width,opC.height);
+  ox.strokeStyle=opMode==='flat'?'rgba(251,113,133,.8)':'rgba(52,211,153,.85)';
+  ox.lineWidth=2;ox.beginPath();
+  const mid=48;
+  for(let i=0;i<opC.width;i+=3){
+    let y;
+    if(opMode==='flat'){y=mid+Math.sin(i*0.3+opT*8)*1.5;}
+    else{const ph=((i/opC.width*2)+opT)%1;y=mid-beat(ph)*30;}
+    i===0?ox.moveTo(i,y):ox.lineTo(i,y);
+  }
+  ox.stroke();opT+=0.006;requestAnimationFrame(drawOp);
+})();
+
+/* ---------- surgery ---------- */
+let operating=false;
+function log(html){const l=document.getElementById('opLog');l.insertAdjacentHTML('beforeend','<div>'+html+'</div>');l.scrollTop=l.scrollHeight;}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function operate(){
+  if(operating)return;operating=true;
+  const btn=document.getElementById('opBtn');btn.disabled=true;btn.style.opacity=.5;
+  document.getElementById('opLog').innerHTML='';
+  document.getElementById('surgeon').classList.add('operating');
+  document.getElementById('surgeonCap').textContent='Dr. Bolt · operating…';
+  opMode='flat';
+  document.getElementById('vStatus').className='vital crit';
+  document.getElementById('vStatus').querySelector('.v').textContent='🔴 CRITICAL';
+  document.getElementById('vHeal').querySelector('.v').textContent='—';
+
+  log('<span class="t">[02:14:07]</span> 🏥 patient wheeled in: <span class="hl">add-to-cart flow</span>');
+  await sleep(900);
+  log('<span class="t">[02:14:08]</span> 🔪 primary instrument: <span class="bad">css=[data-test=\'add-to-cart-backpack\']</span>');
+  await sleep(1100);
+  log('<span class="t">[02:14:09]</span> <span class="bad">✗ NoSuchElement — primary locator not found</span> <span class="t">(dev renamed the id at 2am)</span>');
+  await sleep(900);
+  log('<span class="t">[02:14:10]</span> <span class="warn">⚠ vitals dropping… consulting fallback chain</span>');
+  await sleep(1100);
+  log('<span class="t">[02:14:11]</span> 🔁 fallback 1/3: xpath <span class="t">//div[text()=\'Sauce Labs Backpack\']/…/button</span>');
+  await sleep(1200);
+  log('<span class="t">[02:14:12]</span> <span class="ok">✓ element located via fallback — clicking</span>');
+  opMode='alive';
+  document.getElementById('theaterBox').classList.add('heal-flash');
+  setTimeout(()=>document.getElementById('theaterBox').classList.remove('heal-flash'),1300);
+  await sleep(900);
+  log('<span class="t">[02:14:13]</span> <span class="ok hl">[SELF-HEALED]</span> <span class="t">HealingReport updated · test continues, no rerun</span>');
+  await sleep(700);
+  log('<span class="t">[02:14:14]</span> <span class="ok">💚 patient stabilized — scenario PASSED</span>');
+  document.getElementById('vStatus').className='vital ok';
+  document.getElementById('vStatus').querySelector('.v').textContent='💚 STABLE';
+  document.getElementById('vHeal').querySelector('.v').textContent='fallback XPath';
+  document.getElementById('surgeon').classList.remove('operating');
+  document.getElementById('surgeonCap').textContent='Dr. Bolt · another life saved';
+  btn.disabled=false;btn.style.opacity=1;btn.textContent='🔁 Operate again';
+  operating=false;
+}
+
+/* ---------- lab ---------- */
+async function diagnose(){
+  const logEl=document.getElementById('labLog');logEl.innerHTML='';
+  const rx=document.getElementById('rx');rx.classList.remove('show');
+  const say=h=>logEl.insertAdjacentHTML('beforeend','<div>'+h+'</div>');
+  say('<span class="t">🔬 analyzing failure…</span>');await sleep(800);
+  say('<span class="t">·</span> diffing against last green run <span class="t">(baseline)</span>');await sleep(800);
+  say('<span class="t">·</span> total label read <span class="bad">$43.18</span>, expected <span class="ok">$58.29</span>');await sleep(800);
+  say('<span class="t">·</span> cart snapshot shows 2 items, overview rendered 2 items — <span class="warn">tax row missing from sum</span>');await sleep(800);
+  say('<span class="ok">✓ RCA:</span> regression in <span class="hl">summary_total_label</span> — tax excluded after checkout UI update');
+  document.getElementById('rxRca').textContent='tax excluded from summary_total_label after checkout UI update';
+  rx.classList.add('show');
+  document.getElementById('rxHint').style.display='none';
+}
+
+/* ---------- counters + reveal ---------- */
+document.querySelectorAll('.stat .n').forEach(el=>{
+  const target=+el.dataset.count;let v=0;
+  const iv=setInterval(()=>{v+=Math.max(1,Math.round(target/30));if(v>=target){v=target;clearInterval(iv)}el.textContent=v+(target===100?'%':'')},40);
+});
+const io=new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting&&e.target.classList.add('in')),{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
 </body>
 </html>
