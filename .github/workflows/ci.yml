@@ -52,6 +52,11 @@ jobs:
               head -c 8000 "$f"
               echo '```'
             done
+            echo
+            echo "### target/checkout-debug.txt"
+            echo '```'
+            cat target/checkout-debug.txt 2>/dev/null || echo "(no checkout debug file)"
+            echo '```'
           } > /tmp/diag.md
           gh issue create --title "[CI DEBUG] diagnostics for run ${{ github.run_id }}" --body-file /tmp/diag.md
 
