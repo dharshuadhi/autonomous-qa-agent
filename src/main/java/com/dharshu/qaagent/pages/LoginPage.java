@@ -43,7 +43,7 @@ public class LoginPage {
     public void login(String username, String password) {
         usernameField.find(driver).sendKeys(username);
         passwordField.find(driver).sendKeys(password);
-        loginButton.find(driver).click();
+        loginButton.click(driver);
     }
 
     public String getErrorText() {

@@ -37,11 +37,11 @@ public class CartPage {
                 .primary(By.cssSelector("[data-test='" + testId + "']"))
                 .fallback(By.xpath("//div[text()='" + productName + "']/ancestor::div[@class='cart_item']//button"))
                 .build();
-        removeButton.find(driver).click();
+        removeButton.click(driver);
     }
 
     public void startCheckout() {
-        checkoutButton.find(driver).click();
+        checkoutButton.click(driver);
         // Wait for the checkout-info page to actually load before the next step
         // tries to type into its fields -- fixes a click-then-type race condition.
         new WebDriverWait(driver, Duration.ofSeconds(5))

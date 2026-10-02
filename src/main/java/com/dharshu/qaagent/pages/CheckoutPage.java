@@ -53,12 +53,12 @@ public class CheckoutPage {
         firstNameField.find(driver).sendKeys(firstName);
         lastNameField.find(driver).sendKeys(lastName);
         postalCodeField.find(driver).sendKeys(postalCode);
-        continueButton.find(driver).click();
+        continueButton.click(driver);
     }
 
     /** Clicks Continue with every field left blank, to trigger SauceDemo's validation error. */
     public void submitEmptyForm() {
-        continueButton.find(driver).click();
+        continueButton.click(driver);
     }
 
     public String getCheckoutErrorText() {
@@ -66,7 +66,7 @@ public class CheckoutPage {
     }
 
     public void finishOrder() {
-        finishButton.find(driver).click();
+        finishButton.click(driver);
     }
 
     public double getDisplayedTotal() {

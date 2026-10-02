@@ -3,6 +3,10 @@ package com.dharshu.qaagent.pages;
 import com.dharshu.qaagent.core.SmartLocator;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.time.Duration;
 
 public class InventoryPage {
 
@@ -41,7 +45,7 @@ public class InventoryPage {
                 .primary(addToCartButtonFor(productName))
                 .fallback(By.xpath("//div[text()='" + productName + "']/ancestor::div[@class='inventory_item']//button"))
                 .build();
-        button.find(driver).click();
+        button.click(driver);
     }
 
     public String getCartBadgeCount() {
@@ -49,6 +53,10 @@ public class InventoryPage {
     }
 
     public void goToCart() {
-        cartLink.find(driver).click();
+        cartLink.click(driver);
+        // Don't return until the cart page is actually showing -- otherwise the
+        // next step can run while the browser is still on the inventory page.
+        new WebDriverWait(driver, Duration.ofSeconds(5))
+                .until(ExpectedConditions.urlContains("cart.html"));
     }
 }

@@ -57,10 +57,49 @@ public class SmartLocator {
                         + "locator or any of its " + fallbacks.size() + " fallback locator(s).");
     }
 
+    /**
+     * Clicks the element, waiting until it is actually clickable (visible and
+     * enabled) instead of merely present in the DOM. Clicking a present-but-
+     * not-yet-interactable element silently does nothing on a slow/loaded
+     * page -- this was the source of flaky "add to cart" and navigation
+     * clicks. Fallbacks are healed the same way as {@link #find(WebDriver)}.
+     */
+    public void click(WebDriver driver) {
+        WebElement element = tryClickable(driver, primary, timeout);
+        if (element != null) {
+            HealingReport.recordPrimary(elementName);
+            element.click();
+            return;
+        }
+
+        for (By fallback : fallbacks) {
+            element = tryClickable(driver, fallback, Duration.ofSeconds(2));
+            if (element != null) {
+                HealingReport.recordHealed(elementName, fallback.toString());
+                element.click();
+                return;
+            }
+        }
+
+        HealingReport.recordFailure(elementName);
+        throw new NoSuchElementException(
+                "SmartLocator could not click element \"" + elementName + "\" using the primary "
+                        + "locator or any of its " + fallbacks.size() + " fallback locator(s).");
+    }
+
     private WebElement tryLocator(WebDriver driver, By locator, Duration timeout) {
         try {
             WebDriverWait wait = new WebDriverWait(driver, timeout);
             return wait.until(ExpectedConditions.presenceOfElementLocated(locator));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private WebElement tryClickable(WebDriver driver, By locator, Duration timeout) {
+        try {
+            WebDriverWait wait = new WebDriverWait(driver, timeout);
+            return wait.until(ExpectedConditions.elementToBeClickable(locator));
         } catch (Exception e) {
             return null;
         }
