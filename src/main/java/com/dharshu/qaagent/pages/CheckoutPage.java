@@ -86,24 +86,46 @@ public class CheckoutPage {
      * not enough: right after navigation the input can exist while React is
      * still hydrating, and keys typed into that half-rendered input are wiped
      * on re-render -- leaving the form empty and the Continue click blocked
-     * by validation. So we wait for true interactability first and re-type
-     * once if verification shows the value didn't stick.
+     * by validation. So we write via React's native value setter (so its
+     * change tracking picks it up) with a sendKeys fallback, and verify
+     * through the DOM property, retrying on a freshly resolved element.
      */
     private void typeReliably(SmartLocator field, String value) {
         for (int attempt = 0; attempt < 3; attempt++) {
             WebElement element = field.find(driver);
             new WebDriverWait(driver, Duration.ofSeconds(5))
                     .until(ExpectedConditions.visibilityOf(element));
-            element.clear();
-            element.sendKeys(value);
-            if (value.equals(element.getAttribute("value"))) {
+            setValueReactAware(element, value);
+            if (value.equals(getValueProperty(element))) {
                 return;
             }
-            // Value didn't stick -- re-resolve (the element may have been
-            // re-rendered) and retry.
+            try {
+                element.clear();
+                element.sendKeys(value);
+            } catch (Exception ignored) {
+            }
+            if (value.equals(getValueProperty(element))) {
+                return;
+            }
+            // Value didn't stick -- loop re-resolves (the element may have
+            // been re-rendered) and retries.
         }
         throw new IllegalStateException(
-                "Could not type value into field after 3 attempts (React hydration race).");
+                "Could not type value into field after 3 attempts.");
+    }
+
+    private String getValueProperty(WebElement element) {
+        return (String) ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].value;", element);
+    }
+
+    private void setValueReactAware(WebElement element, String value) {
+        ((JavascriptExecutor) driver).executeScript(
+                "var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;"
+                        + "setter.call(arguments[0], arguments[1]);"
+                        + "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
+                        + "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
+                element, value);
     }
 
     /** Clicks Continue with every field left blank, to trigger SauceDemo's validation error. */
