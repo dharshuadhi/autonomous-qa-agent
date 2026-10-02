@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  issues: write
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -35,28 +32,6 @@ jobs:
 
       - name: Run tests
         run: mvn -B test
-
-      # TEMPORARY diagnostic: CI logs aren't readable without admin rights,
-      # so on failure publish the surefire reports to a (public) issue.
-      - name: Publish failure diagnostics
-        if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          {
-            echo "## Surefire reports for run ${{ github.run_id }}"
-            echo
-            for f in target/surefire-reports/*.txt; do
-              echo "### $f"
-              echo '```'
-              head -c 6000 "$f"
-              echo '```'
-            done
-            echo
-            echo "### surefire-reports listing"
-            ls -la target/surefire-reports/ 2>/dev/null || echo "(no surefire-reports dir)"
-          } > /tmp/diag.md
-          gh issue create --title "[CI DEBUG] diagnostics for run ${{ github.run_id }}" --body-file /tmp/diag.md
 
       - name: Generate Allure report
         if: always()
