@@ -3,6 +3,10 @@ package com.dharshu.qaagent.pages;
 import com.dharshu.qaagent.core.SmartLocator;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.time.Duration;
 
 public class CheckoutPage {
 
@@ -54,6 +58,11 @@ public class CheckoutPage {
         lastNameField.find(driver).sendKeys(lastName);
         postalCodeField.find(driver).sendKeys(postalCode);
         continueButton.click(driver);
+        // The total label only exists on the overview page. Without this wait,
+        // getDisplayedTotal() races the step-one -> step-two navigation and flakes
+        // on slow runners when the overview page takes more than a few seconds.
+        new WebDriverWait(driver, Duration.ofSeconds(15))
+                .until(ExpectedConditions.urlContains("checkout-step-two"));
     }
 
     /** Clicks Continue with every field left blank, to trigger SauceDemo's validation error. */
