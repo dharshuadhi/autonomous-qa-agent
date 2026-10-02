@@ -1,6 +1,7 @@
 package com.dharshu.qaagent.core;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -63,28 +64,40 @@ public class SmartLocator {
      * not-yet-interactable element silently does nothing on a slow/loaded
      * page -- this was the source of flaky "add to cart" and navigation
      * clicks. Fallbacks are healed the same way as {@link #find(WebDriver)}.
+     *
+     * The click itself goes through JavaScript after scrolling the element
+     * into view: unlike a coordinate-based native click it cannot miss when
+     * the layout shifts between the visibility check and the click, which is
+     * what was silently dropping clicks on slow CI runners.
      */
     public void click(WebDriver driver) {
         WebElement element = tryClickable(driver, primary, timeout);
-        if (element != null) {
-            HealingReport.recordPrimary(elementName);
-            element.click();
-            return;
-        }
-
-        for (By fallback : fallbacks) {
-            element = tryClickable(driver, fallback, Duration.ofSeconds(2));
-            if (element != null) {
-                HealingReport.recordHealed(elementName, fallback.toString());
-                element.click();
-                return;
+        By used = primary;
+        boolean healed = false;
+        if (element == null) {
+            for (By fallback : fallbacks) {
+                element = tryClickable(driver, fallback, Duration.ofSeconds(2));
+                if (element != null) {
+                    used = fallback;
+                    healed = true;
+                    break;
+                }
             }
         }
-
-        HealingReport.recordFailure(elementName);
-        throw new NoSuchElementException(
-                "SmartLocator could not click element \"" + elementName + "\" using the primary "
-                        + "locator or any of its " + fallbacks.size() + " fallback locator(s).");
+        if (element == null) {
+            HealingReport.recordFailure(elementName);
+            throw new NoSuchElementException(
+                    "SmartLocator could not click element \"" + elementName + "\" using the primary "
+                            + "locator or any of its " + fallbacks.size() + " fallback locator(s).");
+        }
+        if (healed) {
+            HealingReport.recordHealed(elementName, used.toString());
+        } else {
+            HealingReport.recordPrimary(elementName);
+        }
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
+        js.executeScript("arguments[0].click();", element);
     }
 
     private WebElement tryLocator(WebDriver driver, By locator, Duration timeout) {
