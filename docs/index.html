@@ -125,10 +125,11 @@
     <b>files the bug</b> itself. Built with Java&nbsp;17, Selenium&nbsp;4, Cucumber and an
     aspect-woven Allure reporter — running green in CI right now.</p>
     <div class="badges">
+      <a href="https://github.com/dharshuadhi/autonomous-qa-agent/actions/runs/37057786055">🔴 Watch it run live</a>
       <a href="https://github.com/dharshuadhi/autonomous-qa-agent">★ Repository</a>
       <a href="https://github.com/dharshuadhi/autonomous-qa-agent/actions">✓ CI: passing</a>
-      <a href="#heal">⚡ Watch it heal</a>
-      <a href="#rca">🔍 Watch it triage</a>
+      <a href="#heal">⚡ Healing walkthrough</a>
+      <a href="#rca">🔍 Triage walkthrough</a>
     </div>
     <svg id="bolt" viewBox="0 0 74 96" aria-label="Bolt the QA robot">
       <g class="bob">
@@ -149,12 +150,28 @@
     </svg>
   </div>
 
+  <div class="panel" id="live" style="border-color:var(--green)">
+    <h2>🔴 REAL EXECUTION — LIVE <span class="tag">NOT A SIMULATION</span></h2>
+    <p class="sub">The interactive playground below walks you through the logic. But the
+    <b>real</b> Java&nbsp;17 + Selenium suite is running <b>right now</b> in GitHub Actions
+    against the live SauceDemo site — real browser, real healing, real results.
+    Watch it happen:</p>
+    <div class="controls">
+      <a href="https://github.com/dharshuadhi/autonomous-qa-agent/actions/runs/37057786055"
+         style="text-decoration:none"><button class="act" id="liveBtn">▶ Watch the live CI run</button></a>
+      <a href="https://github.com/dharshuadhi/autonomous-qa-agent/actions"
+         style="text-decoration:none"><button class="ghost">All runs</button></a>
+    </div>
+    <div><img src="https://github.com/dharshuadhi/autonomous-qa-agent/actions/workflows/CI/badge.svg"
+         alt="CI status" style="margin-top:.4rem"></div>
+  </div>
+
   <div class="panel" id="heal">
     <h2>⚡ SELF-HEALING, LIVE <span class="tag">INTERACTIVE</span></h2>
-    <p class="sub">This is a faithful simulation of the real <code>SmartLocator</code>.
-    Break the page the way a UI change would, then run the test and watch the agent
-    walk its fallback chain. Every resolution is counted in the <code>HealingReport</code>,
-    exactly like the Java suite.</p>
+    <p class="sub">A hands-on walkthrough of the real <code>SmartLocator</code> logic
+    (the live execution is running in CI above). Break the page the way a UI change
+    would, then run the test and watch the agent walk its fallback chain. Every
+    resolution is counted in the <code>HealingReport</code>, exactly like the Java suite.</p>
     <div class="browser">
       <div class="bbar"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
         <div class="url">https://www.saucedemo.com/</div></div>
